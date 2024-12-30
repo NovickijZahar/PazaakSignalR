@@ -1,0 +1,103 @@
+﻿@page "/game"
+@inject NavigationManager NavigationManager
+@inject IClientService _clientService
+
+@if (!_clientService.IsConnected)
+{
+    <label for="userName">Username:</label>
+    <input id="userName" @bind="nameInput" placeholder="Enter username" />
+	<label for="roomName">Room Name:</label>
+	<input id="roomName" @bind="roomInput" placeholder="Enter room name" />
+    
+	<button @onclick="JoinGame">Join Game</button>
+}
+
+<div class="overflow-auto" style="max-height: 50px;">
+	<ul id="messageList" class="list-unstyled">
+		@foreach (var message in @_clientService.Messages)
+		{
+			<li>@message</li>
+		}
+	</ul>
+</div>
+
+@if (_clientService.IsStarted)
+{
+    <GameBoard User1=_clientService.User1 User2=_clientService.User2
+        OnPlayCard=PlayCard OnEndTurn=EndTurn OnPass=Pass OnChangeSign=ChangeSign
+        Message=@_clientService.Message IsTurn=_clientService.User1.IsTurn />
+}
+
+@code {
+    private HubConnection hubConnection;
+    private string nameInput;
+    private string roomInput;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("https://localhost:7208/game"))
+            .Build();
+
+        hubConnection.On<string>("Joined", (roomName) =>
+        {
+            _clientService.Joined(roomName);
+            StateHasChanged();
+        });
+
+        hubConnection.On<string>("ReceiveMessage", (msg) =>
+        {
+            _clientService.ReceiveMessage(msg);
+            StateHasChanged();
+        });
+
+        hubConnection.On<string>("GameFull", (msg) =>
+        {
+            _clientService.GameFull(msg);
+            StateHasChanged();
+        });
+
+        hubConnection.On<string>("EndRoundStatus", (msg) =>
+        {
+            _clientService.EndRoundStatus(msg);
+            StateHasChanged();
+        });
+
+        hubConnection.On<User, User, int>("GameStart", (user1, user2, order) =>
+        {
+            _clientService.GameStart(user1, user2, order);
+            StateHasChanged();
+        });
+
+        hubConnection.On<User, User>("Status", (user1, user2) =>
+        {
+            _clientService.Status(user1, user2);
+            StateHasChanged();
+        });
+
+        hubConnection.On("EndGame", () =>
+        {
+            _clientService.EndGame();
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+        StateHasChanged();
+    }
+
+    private async Task ChangeSign(int index) =>
+        await hubConnection.SendAsync("ChangeSign", _clientService.RoomName, _clientService.Order, index);
+
+    private async Task JoinGame() => 
+        await hubConnection.SendAsync("Join", roomInput, nameInput);
+
+    private async Task PlayCard(int index) => 
+        await hubConnection.SendAsync("PlayCard", _clientService.RoomName, _clientService.Order, index);
+
+    private async Task EndTurn() => 
+        await hubConnection.SendAsync("EndTurn", _clientService.RoomName, _clientService.Order);
+
+    private async Task Pass() => 
+        await hubConnection.SendAsync("Pass", _clientService.RoomName, _clientService.Order);
+
+}

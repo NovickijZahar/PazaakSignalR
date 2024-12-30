@@ -1,0 +1,142 @@
+﻿<div class="d-flex justify-content-around" style="font-size: xx-large">
+    <div>Очки: @User1.Points</div>
+    <div>Очки: @User2.Points</div>
+</div>
+
+
+<div class="d-flex justify-content-around mb-2">
+    <div class="d-flex justify-content-around col-2">
+        <div style="font-size: large;">Игрок @User1.Name</div>
+        <div style="font-size: large">Счет: @User1.Count</div>
+    </div>
+    <div class="d-flex justify-content-around col-2">
+        <div style="font-size: large">Игрок @User2.Name</div>
+        <div style="font-size: large">Счет: @User2.Count</div>
+    </div>
+</div>
+
+
+<div class="d-flex justify-content-around mb-2">
+    <div class="d-flex flex-wrap gap-2 justify-content-center col-4">
+        @for (int i = 0; i < User1.Board.Count; i++)
+        {
+            <div class="card col-3 p-1 bg-dark">
+                <img src=@User1.Board[i].ImageUrl alt="Card" />
+                <div style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -40%); color: white;">
+                    @User1.Board[i].Number
+                </div>
+            </div>
+        }
+        @for (var i = 0; i < 9 - User1.Board.Count; i++)
+        {
+            <div class="card col-3 p-1 bg-dark">
+                <img src=@blankCard.ImageUrl alt="Card" style="visibility: hidden" />
+            </div>
+        }
+    </div>
+
+    <div class="position-absolute">
+        @if(IsTurn)
+        {
+            <span style="font-size: large">Ваш ход</span>
+        }
+        else
+        {
+            <span style="font-size: large">Ход противника</span>
+        }
+    </div>
+
+    <div class="position-absolute top-50">
+        <span style="font-size: large">@Message</span>
+    </div>
+
+
+    <div class="d-flex flex-wrap gap-2 justify-content-center col-4">
+        @foreach (var card in User2.Board)
+        {
+            <div class="card col-3 p-1 bg-dark">
+                <img src=@card.ImageUrl alt="Card" />
+                <div style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -40%); color: white;">
+                    @card.Number
+                </div>
+            </div>
+        }
+        @for (var i = 0; i < 9 - User2.Board.Count; i++)
+        {
+            <div class="card col-3 p-1 bg-dark">
+                <img src=@blankCard.ImageUrl alt="Card" style="visibility: hidden" />
+            </div>
+        }
+    </div>
+</div>
+
+<div class="d-flex justify-content-around mb-1">
+    <div class="d-flex gap-2 justify-content-center col-4">
+        @for (int i = 0; i < User1.Hand.Count; i++)
+        {
+            var index = i;
+            <div class="card col-3">
+                <div @onclick="() => OnPlayCard.InvokeAsync(index)"
+                     style="position: absolute; width: 100%; height: 80%">
+                </div>
+                <img src=@User1.Hand[i].ImageUrl alt="Card" />
+                <div style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -40%); color: white;">
+                    @User1.Hand[i].Number
+                </div>
+                <div @onclick="() => OnChangeSign.InvokeAsync(index)"
+                    style="position: absolute; bottom: 0; width: 100%; height: 20%" >
+                    
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex flex-column gap-2 mt-4 justify-content-center col-1 position-absolute">
+        <button class="btn btn-dark" @onclick="() => OnEndTurn.InvokeAsync()">Закончить</button>
+        <button class="btn btn-dark" @onclick="() => OnPass.InvokeAsync()">Пас</button>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-center col-4">
+        @foreach (var card in User2.Hand)
+        {
+            <div class="card col-3">
+                <img src="cards/card_back.png" alt="Card" />
+            </div>
+        }
+    </div>
+</div>
+
+<div class="d-flex justify-content-around">
+    <div style="font-size: xx-large">
+        @if (User1.IsPassed)
+        {
+            <span>Пас</span>
+        }
+    </div>
+    <div style="font-size: xx-large">
+        @if (User2.IsPassed)
+        {
+            <span>Пас</span>
+        }
+    </div>
+</div>
+
+
+
+<style>
+    div{
+        user-select: none;
+    }
+</style>
+
+@code {
+    [Parameter] public User User1 { get; set; }
+    [Parameter] public User User2 { get; set; }
+    [Parameter] public EventCallback<int> OnPlayCard { get; set; }
+    [Parameter] public EventCallback OnEndTurn { get; set; }
+    [Parameter] public EventCallback OnPass { get; set; }
+    [Parameter] public EventCallback<int> OnChangeSign { get; set; }
+    [Parameter] public bool IsTurn { get; set;  }
+    [Parameter] public string Message { get; set; }
+    private Card blankCard = new Card { Number = 1, Type = CardType.NotUser };
+}
